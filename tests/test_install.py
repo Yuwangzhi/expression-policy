@@ -183,7 +183,7 @@ class InstallTests(unittest.TestCase):
         self.assertEqual(set(result.values()), {'created'})
         path = self.home/'.claude/CLAUDE.md'
         install.install_global(path, 'claude')
-        self.assertIn(str(self.config/'academic-writing.md'), path.read_text())
+        self.assertIn((self.config/'academic-writing.md').as_posix(), path.read_text())
         self.assertNotIn('@ACADEMIC@', path.read_text())
         guide = (self.config/'CONTROL.md').read_text()
         self.assertIn((self.prefix/'rules/academic-writing.md').as_uri(), guide)
