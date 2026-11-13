@@ -6,7 +6,9 @@
 
 每次回答按 **理解任务 → 起草 → 清理无信息的防御/机械化措辞 → 核对事实和关键边界 → 交付** 执行。结论先行，信息充分而不重复；保留不确定性、负结果、作者声音和用户要求的文体。短问答轻量执行，长文章逐段执行。
 
-完整规则见 [rules/expression.md](../rules/expression.md)。这是一份独立整理的规则，不声称调用了引用的第三方技能或符合完整 ASD-STE100 英文标准。项目原有的学术、代码、格式、安全要求和权限继续有效；表达规则不扩大工具权限，也不改变执行模式。
+完整规则见 [rules/expression.md](../rules/expression.md)。实际进行论文起草、润色或学术翻译时另读 [论文写作附加规则](../rules/academic-writing.md)，普通问答不展开论文流程。已有 TJU/Nature 等框架继续负责章节流程、投稿要求和双语同步，本工具只在同一次写作中补充核对，不重复运行技能，也不改变宿主指令层级、权限或执行模式。
+
+文体和精确格式按本轮明确要求执行；证据完整性不因“突出优势”“发布会”等叙事偏好而撤销。自定义项目规则若仍有不能兼容的要求，指出具体冲突，只在影响当前产物且已有材料不能解决时询问。本文与附加规则独立编写，不打包 TJU/Nature 的技能正文、章节指南或案例，也不声称运行过它们或符合完整 ASD-STE100 英文标准。
 
 ## 输入、输出与临时开关
 
@@ -52,12 +54,12 @@ python3 install.py
 安装器会：
 
 - 安装运行文件到 `~/.local/share/expression-policy`，创建 `~/.local/bin/xpctl`（Windows 为 `xpctl.cmd`）。
-- 首次建立 `~/.config/expression-policy/rules.md`；后续保留已有自定义规则。
+- 首次建立 `~/.config/expression-policy/rules.md` 和 `academic-writing.md`。升级前逐字节比较现有配置与上次内置副本：一致才更新；已定制或无法确认来源的文件保留，安装结果逐文件报告。
 - 在 Claude `~/.claude/CLAUDE.md` 与 Codex `~/.codex/AGENTS.md` 中添加独立的 `expression-policy` 管理段；保留既有管理段和其他个人指令。
 - 向 `~/.claude/settings.json` 与 `~/.codex/hooks.json` 增量注册 `SessionStart`、`UserPromptSubmit`、`Stop`；只替换本工具自己的处理器，保留其他组和索引。
 - 备份所有改动目标，失败时回退。
 
-重开已有客户端会话以加载新 hooks。全局指令即使在 hook 未加载时仍提供默认写作要求；程序化的单轮复位和界面事件提示需要实际加载 hook。首次 `SessionStart` 和首轮输入注入完整规则，随后注入短流程、当前状态、规则位置和摘要哈希。若 `xpctl` 不在 `PATH`，使用 `~/.local/bin/xpctl`（Windows：`%USERPROFILE%\.local\bin\xpctl.cmd`）。
+重开已有客户端会话以加载新 hooks。全局指令即使在 hook 未加载时仍提供默认写作要求；程序化的单轮复位和界面事件提示需要实际加载 hook。首次 `SessionStart` 和首轮输入注入完整通用规则，随后注入短流程、当前状态、通用规则位置和摘要哈希。开启时每次均附论文规则的实际路径，由模型按当前任务决定是否读取；hook 不靠关键词自动判定论文任务，不自动注入论文规则全文。暂停时两层表达规则都停止注入，项目自身要求仍有效；隐藏提示不暂停规则。若 `xpctl` 不在 `PATH`，使用 `~/.local/bin/xpctl`（Windows：`%USERPROFILE%\.local\bin\xpctl.cmd`）。
 
 卸载：
 
@@ -108,7 +110,8 @@ CCL 的 Codex worker 会读取 `~/.codex/AGENTS.md` 中的默认表达管理段�
 
 ## 定制、升级与恢复
 
-- 自定义 `~/.config/expression-policy/rules.md`；安装器不会覆盖。新版默认副本在 `~/.local/share/expression-policy/rules/expression.md`，可比较后选择更新。
+- 自定义 `~/.config/expression-policy/rules.md` 与 `academic-writing.md`。安装器更新与上次内置副本完全相同的文件，保留自定义或来源未知的内容；新版默认副本均在 `~/.local/share/expression-policy/rules/`。旧版配置已定制时，比较新旧文件后选择性合并，不整份覆盖。
+- 安装器不清理其他工具或个人指令中的旧规则。若旧的“发布会原则”要求掩盖相关负结果，或机械禁用某些词，应在其所属项目/个人配置中明确证据边界；不要让多个重复段落互相争夺优先级。
 - `~/.config/expression-policy/CONTROL.md` 是随版本更新的使用说明；旧版在安装备份内。
 - 状态位于 `~/.local/state/expression-policy/sessions/`，不保存输入正文。`EXPRESSION_STATE_DIR` / `EXPRESSION_CONFIG_DIR` 可覆盖运行时目录。
 - 安装备份位于 `~/.local/state/expression-policy/backups/`，manifest 包含规则、hooks 和程序文件。恢复某次备份时先比较当前文件，避免覆盖之后的新改动。

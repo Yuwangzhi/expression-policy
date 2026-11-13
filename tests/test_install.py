@@ -147,6 +147,61 @@ class InstallTests(unittest.TestCase):
         self.assertFalse(self.prefix.exists())
         self.assertFalse(self.bin.exists())
 
+    def test_upgrade_refreshes_only_unmodified_previous_bundles(self):
+        self.config.mkdir(parents=True)
+        (self.prefix/'rules').mkdir(parents=True)
+        for source_name, config_name in (('expression.md', 'rules.md'),
+                                         ('academic-writing.md', 'academic-writing.md')):
+            (self.prefix/'rules'/source_name).write_bytes(b'previous default\r\n')
+            (self.config/config_name).write_bytes(b'previous default\r\n')
+        result = install.install_config()
+        for source_name, config_name in (('expression.md', 'rules.md'),
+                                         ('academic-writing.md', 'academic-writing.md')):
+            self.assertEqual(result[config_name], 'updated_unmodified')
+            self.assertEqual((self.config/config_name).read_bytes(),
+                             (install.SOURCE/'rules'/source_name).read_bytes())
+
+    def test_upgrade_preserves_custom_and_unknown_rules_and_updates_bundle(self):
+        self.config.mkdir(parents=True)
+        (self.prefix/'rules').mkdir(parents=True)
+        (self.prefix/'rules/expression.md').write_text('old default')
+        (self.config/'rules.md').write_text('old default\nmy customization')
+        (self.config/'academic-writing.md').write_text('custom academic without previous bundle')
+        result = install.install_config()
+        self.assertEqual(set(result.values()), {'preserved_custom_or_unknown'})
+        self.assertEqual((self.config/'rules.md').read_text(), 'old default\nmy customization')
+        self.assertEqual((self.config/'academic-writing.md').read_text(),
+                         'custom academic without previous bundle')
+        for name in ('expression.md', 'academic-writing.md'):
+            self.assertEqual((self.prefix/'rules'/name).read_bytes(),
+                             (install.SOURCE/'rules'/name).read_bytes())
+        # Unknown files stay unknown on a second install; a fresh default never overwrites them.
+        self.assertEqual(set(install.install_config().values()), {'preserved_custom_or_unknown'})
+
+    def test_fresh_academic_install_and_global_path_resolution(self):
+        result = install.install_config()
+        self.assertEqual(set(result.values()), {'created'})
+        path = self.home/'.claude/CLAUDE.md'
+        install.install_global(path, 'claude')
+        self.assertIn(str(self.config/'academic-writing.md'), path.read_text())
+        self.assertNotIn('@ACADEMIC@', path.read_text())
+        guide = (self.config/'CONTROL.md').read_text()
+        self.assertIn((self.prefix/'rules/academic-writing.md').as_uri(), guide)
+
+    def test_failed_upgrade_restores_both_bundles_and_configs(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            install.install()
+        paths = [self.config/'rules.md', self.config/'academic-writing.md',
+                 self.prefix/'rules/expression.md', self.prefix/'rules/academic-writing.md']
+        for index, path in enumerate(paths):
+            path.write_text('previous-' + str(index))
+        before = {path: path.read_bytes() for path in paths}
+        with patch.object(install, 'install_prefix', side_effect=RuntimeError('upgrade failure')):
+            with self.assertRaisesRegex(RuntimeError, 'upgrade failure'):
+                install.install()
+        for path, content in before.items():
+            self.assertEqual(path.read_bytes(), content)
+
     def test_atomic_copy_failure_never_exposes_partial_runtime(self):
         destination = self.home/'runtime.py'
         destination.write_text('previous')

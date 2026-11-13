@@ -20,7 +20,18 @@
 - 保持作者原有声音；正式文本中性，个人文章不强行改成模板。
 - 不机械禁词，不为了“有力”而虚构、漏信息或改变否定关系。
 
-完整规则见 [rules/expression.md](rules/expression.md)；设计参考见文件末尾来源说明。
+完整通用规则见 [rules/expression.md](rules/expression.md)；论文写作、润色和学术翻译另用 [rules/academic-writing.md](rules/academic-writing.md)。设计参考见通用规则末尾来源说明。
+
+## 论文写作与既有技能如何配合
+
+采用“通用表达＋按任务读取的论文附加规则”：普通问答保持轻量；实际写论文时再检查贡献与证据、章节职责、比较口径、归因和双语一致性。论文规则由模型按任务读取，hook 只提供路径，不做关键词触发或自动加载全文。
+
+- 本轮明确的文体、语言、精确格式和编辑范围优先于默认写法；本工具不改变宿主指令层级、安全要求或操作授权。
+- 已采用 TJU/Nature 等框架时，沿用其任务路由、章节流程、投稿要求和双语约定；相同检查只做一次，不另启一套润色或模型评审。
+- “突出优势”“发布会”等叙事建议始终受证据约束，不得隐去相关负结果、选择性报告或悄悄换比较口径。
+- 两层规则共用会话开关；暂停表达规范不撤销项目自身的学术要求。隐藏提示仍继续执行规则。
+
+附加规则针对本工具职责独立编写，不收录 TJU/Nature 的技能正文、章节指南、案例或执行代码；这些技能按原许可单独使用，本工具不依赖其安装。规则分工与场景检查见 [兼容性说明](docs/rule-compatibility.md)。
 
 ## 快速开始
 
@@ -83,7 +94,8 @@ xpctl loud --client claude --session SESSION_ID
 ```text
 ~/.local/bin/xpctl                            启动器（Windows: xpctl.cmd）
 ~/.local/share/expression-policy/             运行文件与内置规则
-~/.config/expression-policy/rules.md          可自定义规则；重装保留
+~/.config/expression-policy/rules.md          通用规则；升级更新未定制副本
+~/.config/expression-policy/academic-writing.md  论文附加规则；按任务读取
 ~/.config/expression-policy/CONTROL.md        使用与维护说明
 ~/.local/state/expression-policy/sessions/    按会话隔离的开关，不保存消息正文
 ~/.local/state/expression-policy/backups/     安装备份与 manifest
@@ -134,8 +146,8 @@ CCL 的 Codex worker 读取 `~/.codex/AGENTS.md` 中的默认表达管理段；�
 
 ## 自定义、升级与卸载
 
-- 自定义 `~/.config/expression-policy/rules.md`；安装器不会覆盖。新版默认副本在 `~/.local/share/expression-policy/rules/expression.md`。
-- 升级：拉取新版本后重新运行 `install.py`，再在新会话验证 hook。
+- 自定义 `~/.config/expression-policy/rules.md` 或 `academic-writing.md`。升级前与上次内置副本逐字节比较：完全一致才更新；自定义或来源未知的文件保留。安装结果 `rules_updated` 逐文件报告处理状态；新版默认副本在 `~/.local/share/expression-policy/rules/`。
+- 升级：拉取新版本后重新运行 `install.py`，检查处理状态，再在新会话验证 hook。被保留的自定义规则需要比较后选择性合并；安装器不改其他工具或个人指令中的旧写作规则。
 - 卸载：`python3 install.py --uninstall` 移除 hooks、管理段、运行文件，保留规则和会话状态；加 `--purge` 一并移除。
 - 手动恢复：安装备份在 `~/.local/state/expression-policy/backups/`，先比较当前文件，避免覆盖之后的新改动。
 

@@ -115,6 +115,44 @@ class ExpressionTests(unittest.TestCase):
         self.assertEqual(store.rules_path(), ROOT/'rules/expression.md')
         self.assertIn('默认表达规范', store.rules()[0])
 
+    def test_academic_routing_hint_is_available_on_later_turns_for_both_clients(self):
+        for client in ('claude', 'codex'):
+            self.hook('先解释原理', client=client)
+            out = self.hook('继续', client=client)
+            text = out['hookSpecificOutput']['additionalContext']
+            self.assertIn(str(ROOT/'rules/academic-writing.md'), text)
+            self.assertIn('普通问答不展开论文流程', text)
+            self.assertIn('TJU/Nature', text)
+            self.assertNotIn('# 论文写作附加规则', text)
+
+    def test_academic_override_is_resolved_but_not_read_by_hook(self):
+        academic = self.config/'academic-writing.md'
+        academic.write_text('CUSTOM_ACADEMIC_ONLY', encoding='utf-8')
+        out = self.hook(event='SessionStart')
+        text = out['hookSpecificOutput']['additionalContext']
+        self.assertIn(str(academic), text)
+        self.assertNotIn('CUSTOM_ACADEMIC_ONLY', text)
+        store = expression_policy.StyleStore(self.tmp.name+'/state', self.config)
+        self.assertEqual(store.academic_rules_path(), academic)
+
+    def test_pause_does_not_inject_academic_routing_for_both_clients(self):
+        for client in ('claude', 'codex'):
+            for command in ('本轮暂停表达规范，润色论文', '暂停表达规范，翻译摘要'):
+                text = self.hook(command, client=client)['hookSpecificOutput']['additionalContext']
+                self.assertNotIn('academic-writing.md', text)
+                self.assertNotIn('TEST_RULE', text)
+                self.assertIn('其他任务约束仍有效', text)
+                self.hook('恢复表达规范', client=client)
+
+    def test_quiet_still_routes_academic_and_postcompact_restores_full_core(self):
+        self.hook('隐藏表达提示')
+        out = self.hook(event='PostCompact')
+        text = out['hookSpecificOutput']['additionalContext']
+        self.assertIn('TEST_RULE', text)
+        self.assertIn('academic-writing.md', text)
+        self.assertIn('不加表达状态标记', text)
+        self.assertNotIn('systemMessage', out)
+
     def test_hook_command_matching_is_exact(self):
         program = ROOT/'expression_policy.py'
         command = expression_policy.hook_command(sys.executable, program, 'codex')

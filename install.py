@@ -87,21 +87,39 @@ def install_global(path, client):
     if not should_replace(existing):
         return False
     template = (SOURCE/'rules/global-policy.md').read_text(encoding='utf-8')
-    body = template.replace('@RULES@', (CONFIG/'rules.md').as_posix()).replace('@CLIENT@', client)
+    body = (template.replace('@RULES@', (CONFIG/'rules.md').as_posix())
+            .replace('@ACADEMIC@', (CONFIG/'academic-writing.md').as_posix()).replace('@CLIENT@', client))
     block(path, body)
     return True
 
 
+def install_rule(source_name, config_name):
+    """Update only absent files or byte-identical copies of the previous bundle."""
+    bundled = PREFIX/'rules'/source_name
+    configured = CONFIG/config_name
+    previous = bundled.read_bytes() if bundled.is_file() else None
+    if not configured.exists():
+        status = 'created'
+    elif previous is not None and configured.read_bytes() == previous:
+        status = 'updated_unmodified'
+    else:
+        status = 'preserved_custom_or_unknown'
+    copy_atomic(SOURCE/'rules'/source_name, bundled)
+    if status != 'preserved_custom_or_unknown':
+        copy_atomic(bundled, configured)
+    return status
+
+
 def install_config():
     CONFIG.mkdir(parents=True, exist_ok=True)
-    bundled = PREFIX/'rules/expression.md'
-    bundled.parent.mkdir(parents=True, exist_ok=True)
-    copy_atomic(SOURCE/'rules/expression.md', bundled)
-    if not (CONFIG/'rules.md').exists():
-        copy_atomic(bundled, CONFIG/'rules.md')
+    updates = {config_name: install_rule(source_name, config_name)
+               for source_name, config_name in (('expression.md', 'rules.md'),
+                                                ('academic-writing.md', 'academic-writing.md'))}
     guide = (SOURCE/'docs/control.md').read_text(encoding='utf-8')
-    (CONFIG/'CONTROL.md').write_text(guide.replace('(../rules/expression.md)', '(' + bundled.as_uri() + ')'),
-                                     encoding='utf-8')
+    for source_name in ('expression.md', 'academic-writing.md'):
+        guide = guide.replace('(../rules/' + source_name + ')', '(' + (PREFIX/'rules'/source_name).as_uri() + ')')
+    (CONFIG/'CONTROL.md').write_text(guide, encoding='utf-8')
+    return updates
 
 
 def hook_handler(client):
@@ -173,9 +191,9 @@ def backup_paths():
     backup = STATE/'backups'/stamp
     targets = [HOME/'.claude/settings.json', HOME/'.claude/CLAUDE.md',
                HOME/'.codex/hooks.json', HOME/'.codex/AGENTS.md',
-               CONFIG/'rules.md', CONFIG/'CONTROL.md', BIN, BIN.with_suffix('.cmd')]
+               CONFIG/'rules.md', CONFIG/'academic-writing.md', CONFIG/'CONTROL.md', BIN, BIN.with_suffix('.cmd')]
     targets += [PREFIX/name for name in MODULES]
-    targets += [PREFIX/'rules/expression.md']
+    targets += [PREFIX/'rules/expression.md', PREFIX/'rules/academic-writing.md']
     backup.mkdir(parents=True)
     manifest = []
     for index, path in enumerate(targets):
@@ -208,13 +226,15 @@ def install():
     os.umask(0o077)
     backup, manifest = backup_paths()
     try:
-        install_config()
+        rules_updated = install_config()
         install_prefix()
         configure_hooks(HOME/'.claude/settings.json', 'claude')
         configure_hooks(HOME/'.codex/hooks.json', 'codex')
         updated = [str(path) for path in (HOME/'.claude/CLAUDE.md', HOME/'.codex/AGENTS.md')
                    if install_global(path, 'claude' if 'CLAUDE' in path.name else 'codex')]
-        print(json.dumps({'installed': str(BIN), 'rules': str(CONFIG/'rules.md'), 'backup': str(backup),
+        print(json.dumps({'installed': str(BIN), 'rules': str(CONFIG/'rules.md'),
+                          'academic_rules': str(CONFIG/'academic-writing.md'), 'rules_updated': rules_updated,
+                          'backup': str(backup),
                           'global_blocks_updated': updated, 'hooks': list(EVENTS),
                           'codex_trust': 'Review ~/.codex/hooks.json in Codex /hooks, or run the installed '
                                          'codex_hook_admin.py --approve after inspection. No trust is granted here.'},

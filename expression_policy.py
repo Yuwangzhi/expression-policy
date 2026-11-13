@@ -11,7 +11,7 @@ import sys
 import tempfile
 import platform_support
 
-VERSION = '1'
+VERSION = '2'
 COMMANDS = {
     '本轮暂停表达规范': 'once', '这轮暂停表达规范': 'once',
     '本轮不用表达规范': 'once', '暂停表达规范': 'off',
@@ -121,6 +121,10 @@ class StyleStore:
         configured = self.config/'rules.md'
         return configured if configured.is_file() else Path(__file__).resolve().parent/'rules/expression.md'
 
+    def academic_rules_path(self):
+        configured = self.config/'academic-writing.md'
+        return configured if configured.is_file() else Path(__file__).resolve().parent/'rules/academic-writing.md'
+
     def rules(self):
         text = self.rules_path().read_text(encoding='utf-8')
         return text, hashlib.sha256(text.encode()).hexdigest()[:12]
@@ -140,6 +144,9 @@ class StyleStore:
             text += rules if full else ('执行：理解任务→起草→删无信息的防御/假对比/模板套话与重复→核对事实、否定关系、'
                                         '主张强度和必要边界→交付。结论先行，具体易懂，术语一致，保持作者文体；'
                                         '不要为可读性虚构、漏信息或隐瞒失败。按全局默认表达规范全文执行。')
+            text += ('\n仅实际进行论文起草、润色或学术翻译时读取：'+str(self.academic_rules_path())+'。'
+                     '普通问答不展开论文流程；已有 TJU/Nature 等框架继续负责领域流程、格式与双语同步，'
+                     '本规范只补充同一次表达核对，不改变宿主指令层级或操作授权；叙事偏好不得覆盖证据边界。')
         if data['notice']:
             text += '\n面向用户的自由文本回复使用标记【表达规范：'+label+'】；精确JSON/代码/原文输出除外。'
             text += '标记只表示启用状态，不表示已验证输出质量。'
