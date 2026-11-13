@@ -57,7 +57,7 @@ python3 install.py
 - 向 `~/.claude/settings.json` 与 `~/.codex/hooks.json` 增量注册 `SessionStart`、`UserPromptSubmit`、`Stop`；只替换本工具自己的处理器，保留其他组和索引。
 - 备份所有改动目标，失败时回退。
 
-重开已有客户端会话以加载新 hooks。全局指令即使在 hook 未加载时仍提供默认写作要求；程序化的单轮复位和界面事件提示需要实际加载 hook。首次 `SessionStart` 和首轮输入注入完整规则，随后注入短流程、当前状态、规则位置和摘要哈希。
+重开已有客户端会话以加载新 hooks。全局指令即使在 hook 未加载时仍提供默认写作要求；程序化的单轮复位和界面事件提示需要实际加载 hook。首次 `SessionStart` 和首轮输入注入完整规则，随后注入短流程、当前状态、规则位置和摘要哈希。若 `xpctl` 不在 `PATH`，使用 `~/.local/bin/xpctl`（Windows：`%USERPROFILE%\.local\bin\xpctl.cmd`）。
 
 卸载：
 

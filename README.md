@@ -41,7 +41,7 @@ python -X utf8 install.py
 & "$env:USERPROFILE\.local\bin\xpctl.cmd" status --client claude --session test
 ```
 
-安装后重开已有客户端会话。新会话默认开启；全局规则在 hook 未加载时仍然生效，程序化的单轮复位和界面提示需要客户端实际加载 hooks。
+安装后重开已有客户端会话。新会话默认开启；全局规则在 hook 未加载时仍然生效，程序化的单轮复位和界面提示需要客户端实际加载 hooks。若终端找不到 `xpctl`，使用 `~/.local/bin/xpctl`（Windows：`%USERPROFILE%\.local\bin\xpctl.cmd`）或把该目录加入 `PATH`。
 
 ## 在对话里控制
 
